@@ -226,8 +226,11 @@ protected:
 class UIBox : public UIContainerVec
 {
 public:
-    UIBox() : horz(false), justify_items(UI_JUSTIFY_START), align_items(UI_ALIGN_UNSET) {
-        expand_h = expand_v = true;
+    UIBox(bool _horz = false, bool _expand_h = true, bool _expand_v = true,
+            UIJustify_type _j = UI_JUSTIFY_START, UIAlign_type _a = UI_ALIGN_UNSET)
+    : horz(_horz), justify_items(_j), align_items(_a) {
+        expand_h = _expand_h;
+        expand_v = _expand_v;
     };
     void add_child(shared_ptr<UI> child);
     bool horz;
