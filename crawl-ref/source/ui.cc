@@ -44,6 +44,8 @@ static void ui_push_scissor(i4 scissor);
 static void ui_pop_scissor();
 static i4 ui_get_scissor();
 
+static const i4 alloc_sentinel = {-1, -1, -1, -1};
+
 static struct UIRoot
 {
 public:
@@ -157,12 +159,16 @@ UISizeReq UI::get_preferred_size(int dim, int prosp_width)
 
 void UI::allocate_region(i4 region)
 {
-    m_region = {
+    i4 new_region = {
         region[0] + margin[3],
         region[1] + margin[0],
         region[2] - margin[3] - margin[1],
         region[3] - margin[0] - margin[2],
     };
+
+    if (m_region == new_region)
+        return;
+    m_region = new_region;
 
     ASSERT(m_region[2] >= 0);
     ASSERT(m_region[3] >= 0);
@@ -190,6 +196,14 @@ void UI::_invalidate_sizereq()
     cached_sr_valid[1] = false;
     if (m_parent)
         m_parent->_invalidate_sizereq();
+    ui_root.queue_layout();
+}
+
+void UI::_queue_allocation()
+{
+    m_region = alloc_sentinel;
+    if (m_parent)
+        m_parent->_queue_allocation();
     ui_root.queue_layout();
 }
 
@@ -354,7 +368,7 @@ void UIText::set_text(const formatted_string &fs)
     m_text += fs;
     _invalidate_sizereq();
     m_wrapped_size = { -1, -1 };
-    _allocate_region();
+    _queue_allocation();
 }
 
 void UIText::wrap_text_to_size(int width, int height)
@@ -541,6 +555,7 @@ void UIStack::add_child(shared_ptr<UI> child)
     child->_set_parent(this);
     m_children.push_back(move(child));
     _invalidate_sizereq();
+    _queue_allocation();
 }
 
 void UIStack::pop_child()
@@ -549,6 +564,7 @@ void UIStack::pop_child()
         return;
     m_children.pop_back();
     _invalidate_sizereq();
+    _queue_allocation();
 }
 
 void UIStack::_render()
@@ -765,6 +781,7 @@ void UIScroller::set_scroll(int y)
     if (m_scroll == y)
         return;
     m_scroll = y;
+    _queue_allocation();
 }
 
 void UIScroller::set_child(shared_ptr<UI> child)

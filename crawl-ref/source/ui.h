@@ -104,6 +104,7 @@ public:
     virtual void _allocate_region();
     void _set_parent(UI* p);
     void _invalidate_sizereq();
+    void _queue_allocation();
 
     // Wrapper functions which handle common behavior
     // - margins
