@@ -88,7 +88,7 @@ int show_description(const string &body)
 
 /// A message explaining how the player can toggle between quote &
 static const string _toggle_message =
-    "Press '<w>!</w>'"
+    "\nPress '<w>!</w>'"
 #ifdef USE_TILE_LOCAL
     " or <w>Right-click</w>"
 #endif
@@ -105,11 +105,11 @@ int show_description(const describe_info &inf)
     formatted_scroller desc_fs;
     int flags = MF_NOSELECT | MF_NOWRAP;
     desc_fs.set_flags(flags, false);
-    desc_fs.set_more();
+    desc_fs.set_more(formatted_string(""));
     desc_fs.add_text(desc, false, get_number_of_cols());
 
     formatted_scroller quote_fs;
-    quote_fs.set_more();
+    quote_fs.set_more(formatted_string(""));
 
     if (!inf.quote.empty())
     {
@@ -119,7 +119,7 @@ int show_description(const describe_info &inf)
         quote_fs.set_more(formatted_string::parse_string(_toggle_message));
 
         quote_fs.add_text(inf.title, true);
-        quote_fs.add_text(inf.quote, false, get_number_of_cols() - 1);
+        quote_fs.add_text(trimmed_string(inf.quote), false, get_number_of_cols() - 1);
     }
 
     bool show_quote = false;
@@ -4089,8 +4089,8 @@ int describe_monsters(const monster_info &mi, bool force_seen,
 
     formatted_scroller qs;
 
-    fs.set_more();
-    qs.set_more();
+    fs.set_more(formatted_string(""));
+    qs.set_more(formatted_string(""));
 
     if (!inf.quote.empty())
     {
@@ -4100,7 +4100,7 @@ int describe_monsters(const monster_info &mi, bool force_seen,
         qs.set_more(formatted_string::parse_string(_toggle_message));
 
         qs.add_text(inf.title, true);
-        qs.add_text(inf.quote, false, get_number_of_cols() - 1);
+        qs.add_text(trimmed_string(inf.quote), false, get_number_of_cols() - 1);
     }
 
     fs.add_item_formatted_string(formatted_string::parse_string(inf.footer));
