@@ -71,7 +71,7 @@ protected:
     vector<GLW_3VF> m_position_buffer;
     vector<GLW_2VF> m_texture_buffer;
     vector<VColour> m_colour_buffer;
-    vector<unsigned short int> m_ind_buffer;
+    vector<unsigned int> m_ind_buffer;
 
 private:
     void glDebug(const char* msg);

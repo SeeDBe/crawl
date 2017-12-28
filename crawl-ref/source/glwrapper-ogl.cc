@@ -533,7 +533,7 @@ void OGLShapeBuffer::add_rect(const GLWPrim &rect)
     {
         // This is not the first box so make FOUR degenerate triangles
         m_ind_buffer.resize(last + 6);
-        unsigned short int val = m_ind_buffer[last - 1];
+        unsigned int val = m_ind_buffer[last - 1];
 
         // the first three degens finish the previous box and move
         // to the first position of the new one we just added and
@@ -611,7 +611,7 @@ void OGLShapeBuffer::draw(const GLState &state)
     {
     case GLW_RECTANGLE:
         glDrawElements(GL_TRIANGLE_STRIP, m_ind_buffer.size(),
-                       GL_UNSIGNED_SHORT, &m_ind_buffer[0]);
+                       GL_UNSIGNED_INT, &m_ind_buffer[0]);
         break;
     case GLW_LINES:
         glDrawArrays(GL_LINES, 0, m_position_buffer.size());
