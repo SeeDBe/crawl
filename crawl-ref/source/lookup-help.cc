@@ -1084,26 +1084,6 @@ static int _describe_cloud(const string &key, const string &suffix,
     return _describe_key(key, suffix, footer, extra_cloud_info(cloud));
 }
 
-
-/**
- * Describe the given spellbook.
- *
- * @param item      The item in question.
- * @return          0.
- *                  TODO: change to the last keypress (to allow exact match
- *                  support)
- */
-static int _describe_spellbook(const item_def &item)
-{
-    const string desc = get_item_description(item, true);
-    formatted_string fdesc;
-    fdesc.cprintf("%s", desc.c_str());
-
-    list_spellset(item_spellset(item), nullptr, &item, fdesc);
-    return 0; // XXX: this breaks exact match stuff
-}
-
-
 /**
  * Describe the item with the given name.
  *
@@ -1120,17 +1100,13 @@ static int _describe_item(const string &key, const string &suffix,
     if (get_item_by_name(&item, key.c_str(), OBJ_WEAPONS)
         || get_item_by_name(&item, key.c_str(), OBJ_ARMOUR)
         || get_item_by_name(&item, key.c_str(), OBJ_MISSILES)
+        || get_item_by_name(&item, key.c_str(), OBJ_BOOKS)
         || get_item_by_name(&item, key.c_str(), OBJ_MISCELLANY))
     {
         // don't request description since _describe_key handles that
         stats = get_item_description(item, true, false, true);
     }
     // spellbooks are interactive & so require special handling
-    else if (get_item_by_name(&item, key.c_str(), OBJ_BOOKS))
-    {
-        item_colour(item);
-        return _describe_spellbook(item);
-    }
 
     return _describe_key(key, suffix, footer, stats);
 }
