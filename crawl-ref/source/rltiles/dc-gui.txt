@@ -164,3 +164,14 @@ misc/error ERROR
 
 prompt_yes PROMPT_YES
 prompt_no PROMPT_NO
+
+# Popup box skin: tl = top-left, br = bottom-right, etc. order is important!
+skin/box-tl SKIN_BOX_TL
+skin/box-t SKIN_BOX_T
+skin/box-tr SKIN_BOX_TR
+skin/box-l SKIN_BOX_L
+skin/box-m SKIN_BOX_M
+skin/box-r SKIN_BOX_R
+skin/box-bl SKIN_BOX_BL
+skin/box-b SKIN_BOX_B
+skin/box-br SKIN_BOX_BR
