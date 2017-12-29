@@ -188,14 +188,7 @@ int MenuDisplayText::recalculate_page_size()
     if (menu_entries_have_dup_hotkeys(m_menu->items))
         m_pagesize = min(52, m_pagesize);
 
-    int end = min(m_first_entry + m_pagesize, (int)m_menu->items.size());
-    int i;
-    for (i = m_first_entry; i < end; ++i)
-    {
-        if (m_menu->items[i]->level == MEL_END_OF_SECTION)
-            break;
-    }
-    m_last_entry = i-1;
+    m_last_entry = min(m_first_entry + m_pagesize, (int)m_menu->items.size()) - 1;
 
     return m_pagesize;
 }
@@ -244,14 +237,12 @@ bool MenuDisplayText::scroll_to_item(int index)
 
     int dir = index < m_first_entry ? -1 : 1;
 
-    // Find leading edge of page area, and check for MEL_END_OF_SECTIONs
+    // Find leading edge of page area
     for (int i = dir == -1 ? m_first_entry : m_last_entry; ; i += dir, m_first_entry += dir)
     {
         if (m_first_entry == index)
             break;
         if (i+dir < 0 || i+dir >= (int)m_menu->items.size())
-            break;
-        if (m_menu->items[i+dir]->level == MEL_END_OF_SECTION)
             break;
     }
 
@@ -326,11 +317,7 @@ void MenuDisplayTile::draw_items()
         return;
 
     for (unsigned int i = 0; i < m_menu->items.size(); ++i)
-    {
-        // Only formatted_scrollers have these, and they use the text renderer
-        ASSERT(m_menu->items[i]->level != MEL_END_OF_SECTION);
         draw_stock_item(i, m_menu->items[i]);
-    }
 
     tiles.get_menu()->set_menu_display(this);
     tiles.get_menu()->place_entries();
@@ -1466,9 +1453,7 @@ void Menu::draw_menu()
 
     int a, b;
     mdisplay->get_visible_items_range(a, b);
-    if ((a > 0 && items[a-1]->level != MEL_END_OF_SECTION)
-        || (b < (int)items.size()-1 && items[b+1]->level != MEL_END_OF_SECTION)
-        || is_set(MF_ALWAYS_SHOW_MORE))
+    if ((a > 0) || (b < (int)items.size()-1) || is_set(MF_ALWAYS_SHOW_MORE))
         mdisplay->draw_more();
 }
 
@@ -1816,14 +1801,12 @@ void Menu::webtiles_update_section_boundaries()
         || webtiles_section_end() <= first_entry)
     {
         _webtiles_section_start = first_entry;
-        while (_webtiles_section_start > 0
-               && items[_webtiles_section_start - 1]->level != MEL_END_OF_SECTION)
+        while (_webtiles_section_start > 0)
         {
             _webtiles_section_start--;
         }
         _webtiles_section_end = min(first_entry + 1, (int) items.size());
-        while (_webtiles_section_end < (int) items.size()
-               && items[_webtiles_section_end]->level != MEL_END_OF_SECTION)
+        while (_webtiles_section_end < (int) items.size())
         {
             _webtiles_section_end++;
         }
@@ -1956,127 +1939,6 @@ void column_composer::compose_formatted_column(
     }
 }
 
-formatted_scroller::formatted_scroller() : Menu(MF_NOSELECT)
-{
-#ifdef USE_TILE_LOCAL
-    delete mdisplay;
-    mdisplay = new MenuDisplayText(this);
-#endif
-    set_highlighter(nullptr);
-}
-
-formatted_scroller::formatted_scroller(int _flags, const string& s) : Menu()
-{
-    set_flags(_flags);
-    set_highlighter(nullptr);
-    add_text(s);
-}
-
-void formatted_scroller::set_flags(int new_flags, bool use_options)
-{
-    ASSERT(!(new_flags & MF_MULTISELECT));
-    if (!(new_flags & MF_SINGLESELECT))
-        new_flags |= MF_NOSELECT;
-    Menu::set_flags(new_flags);
-}
-
-void formatted_scroller::add_text(const string& s, bool new_line, int wrap_col)
-{
-    vector<formatted_string> parts;
-
-    formatted_string::parse_string_to_multiple(s, parts, wrap_col);
-    for (const formatted_string &part : parts)
-        add_item_formatted_string(part);
-
-    if (new_line)
-        add_item_formatted_string(formatted_string::parse_string("\n"));
-}
-
-void formatted_scroller::add_raw_text(const string& s, bool new_line,
-                                      int wrap_col)
-{
-    vector<formatted_string> parts;
-
-    vector<string> lines = split_string("\n", s, false, true);
-    if (wrap_col > 0)
-    {
-        vector<string> pre_split = move(lines);
-        for (string &line : pre_split)
-        {
-            if (line.empty())
-                lines.emplace_back(" ");
-            while (!line.empty())
-                lines.push_back(wordwrap_line(line, wrap_col, false, true));
-        }
-    }
-
-    for (const string &line : lines)
-        add_item_formatted_string(formatted_string(line));
-
-    if (new_line)
-        add_item_formatted_string(formatted_string::parse_string("\n"));
-}
-
-void formatted_scroller::add_item_formatted_string(const formatted_string& fs,
-                                                   int hotkey)
-{
-    MenuEntry* me = new MenuEntry;
-    me->data = new formatted_string(fs);
-    if (hotkey)
-    {
-        me->add_hotkey(hotkey);
-        me->quantity = 1;
-    }
-    add_entry(me);
-}
-
-void formatted_scroller::wrap_formatted_string(const formatted_string& fs,
-                                               int width)
-{
-    add_text(fs.to_colour_string(), false, width);
-}
-
-void formatted_scroller::add_item_string(const string& s, int hotkey)
-{
-    MenuEntry* me = new MenuEntry(s);
-    if (hotkey)
-        me->add_hotkey(hotkey);
-    add_entry(me);
-}
-
-void formatted_scroller::draw_index_item(int index, const MenuEntry *me) const
-{
-    if (me->data == nullptr)
-        Menu::draw_index_item(index, me);
-    else
-    {
-        static_cast<MenuDisplayText*>(mdisplay)->cgotoxy_for_index(index);
-        static_cast<formatted_string*>(me->data)->display();
-    }
-}
-
-#ifdef USE_TILE_WEB
-void formatted_scroller::webtiles_write_item(int index, const MenuEntry* me) const
-{
-    if (me->data == nullptr)
-        Menu::webtiles_write_item(index, me);
-    else
-    {
-        formatted_string* fs = static_cast<formatted_string*>(me->data);
-        tiles.json_write_string(fs->to_colour_string());
-    }
-}
-#endif
-
-formatted_scroller::~formatted_scroller()
-{
-    // Very important: this destructor is called *before* the base
-    // (Menu) class destructor... which is as it should be.
-    for (const MenuEntry *item : items)
-        if (item->data)
-            delete static_cast<formatted_string*>(item->data);
-}
-
 int linebreak_string(string& s, int maxcol, bool indent)
 {
     // [ds] Don't loop forever if the user is playing silly games with
@@ -2105,117 +1967,6 @@ string get_linebreak_string(const string& s, int maxcol)
     string r = s;
     linebreak_string(r, maxcol);
     return r;
-}
-
-bool formatted_scroller::jump_to(int i, bool no_scroll)
-{
-    MenuDisplayText *display = static_cast<MenuDisplayText*>(mdisplay);
-    if (no_scroll && !display->jump_to_item(i))
-        return false;
-    if (!no_scroll && !display->scroll_to_item(i))
-        return false;
-
-    // jump_to() is used to jump between sections of a formatted_scroller
-    // we only want to re-show the menu when we jump between sections, which
-    // is why this code doesn't belong in MenuDisplayText::scroll_to_item()
-#ifdef USE_TILE_WEB
-    webtiles_update_section_boundaries();
-    if (tiles.is_in_menu(this))
-    {
-        webtiles_write_menu(true);
-        tiles.finish_message();
-    }
-#endif
-
-    return true;
-}
-
-bool formatted_scroller::jump_to_hotkey(int keyin)
-{
-    for (unsigned int i = 0; i < items.size(); ++i)
-        if (items[i]->is_hotkey(keyin))
-            return jump_to(i, true);
-    return false;
-}
-
-vector<MenuEntry *> formatted_scroller::show(bool reuse_selections)
-{
-#ifdef USE_TILE_WEB
-    _webtiles_section_start = 0;
-    _webtiles_section_end = 0;
-    webtiles_update_section_boundaries();
-#endif
-    return Menu::show(reuse_selections);
-}
-
-bool formatted_scroller::process_key(int keyin)
-{
-    lastch = keyin;
-
-#ifdef TOUCH_UI
-    if (keyin == CK_TOUCH_DUMMY) // mouse click in title area, which
-        return true;             // wouldn't usually be handled
-#endif
-
-    if (f_keyfilter)
-        keyin = (*f_keyfilter)(keyin);
-
-    bool repaint = false;
-    // Any key is assumed to be a movement key for now...
-    bool moved = true;
-    switch (keyin)
-    {
-    case CK_REDRAW:
-        draw_menu();
-        return true;
-    case 0:
-        return true;
-    case CK_MOUSE_CMD:
-    CASE_ESCAPE
-        return false;
-    case ' ': case '+': case CK_PGDN: case '>': case '\'':
-    case CK_MOUSE_B5:
-    case CK_MOUSE_CLICK:
-        repaint = page_down();
-        break;
-    case '-': case CK_PGUP: case '<': case ';':
-    case CK_MOUSE_B4:
-        repaint = page_up();
-        break;
-    case CK_UP:
-        repaint = line_up();
-        break;
-    case CK_DOWN:
-    case CK_ENTER:
-        repaint = line_down();
-        break;
-    case CK_HOME:
-        repaint = jump_to(0);
-        break;
-    case CK_END:
-        repaint = jump_to(INT_MAX);
-        break;
-    default:
-        moved = false;
-        if (is_set(MF_SINGLESELECT))
-        {
-            select_items(keyin);
-            get_selected(&sel);
-            if (sel.size() >= 1)
-                return false;
-        }
-        else
-            repaint = jump_to_hotkey(keyin);
-
-        break;
-    }
-
-    if (repaint)
-        draw_menu();
-    else if (!moved || is_set(MF_EASY_EXIT))
-        return false;
-
-    return true;
 }
 
 int ToggleableMenu::pre_process(int key)

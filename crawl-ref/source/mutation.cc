@@ -38,6 +38,7 @@
 #include "player-equip.h" // lose_permafly_source
 #include "player-stats.h"
 #include "religion.h"
+#include "scroller.h"
 #include "skills.h"
 #include "state.h"
 #include "stringutil.h"
@@ -589,28 +590,22 @@ void validate_mutations(bool debug_msg)
         ASSERT(you.attribute[ATTR_TEMP_MUT_XP] > 0);
 }
 
-string describe_mutations(bool center_title)
+string describe_mutations(bool drop_title)
 {
 #ifdef DEBUG
     validate_mutations(true);
 #endif
     string result;
-    const char *mut_title = "Innate Abilities, Weirdness & Mutations";
 
     _num_full_suppressed = _num_part_suppressed = 0;
     _num_transient = 0;
 
-    if (center_title)
+    if (!drop_title)
     {
-        int offset = 39 - strwidth(mut_title) / 2;
-        if (offset < 0) offset = 0;
-
-        result += string(offset, ' ');
+        result += "<white>";
+        result += "Innate Abilities, Weirdness & Mutations";
+        result += "</white>\n\n";
     }
-
-    result += "<white>";
-    result += mut_title;
-    result += "</white>\n\n";
 
     result += "<lightblue>";
     const string old_result = result;
@@ -846,8 +841,8 @@ static void _display_vampire_attributes()
     attrib_menu.add_text(result);
 
     attrib_menu.show();
-    if (attrib_menu.getkey() == '!'
-        || attrib_menu.getkey() == CK_MOUSE_CMD)
+    if (attrib_menu.get_lastch() == '!'
+        || attrib_menu.get_lastch() == CK_MOUSE_CMD)
     {
         display_mutations();
     }
@@ -878,7 +873,12 @@ void display_mutations()
         mutation_s += extra;
     }
 
+#ifdef USE_TILE_WEB
+    tiles_crt_control show_as_menu(CRT_MENU);
+#endif
+
     formatted_scroller mutation_menu;
+    mutation_menu.set_title(formatted_string::parse_string("<white>Innate Abilities, Weirdness & Mutations</white>"));
     mutation_menu.add_text(mutation_s);
 
     mouse_control mc(MOUSE_MODE_MORE);
@@ -886,8 +886,8 @@ void display_mutations()
     mutation_menu.show();
 
     if (you.species == SP_VAMPIRE
-        && (mutation_menu.getkey() == '!'
-            || mutation_menu.getkey() == CK_MOUSE_CMD))
+        && (mutation_menu.get_lastch() == '!'
+            || mutation_menu.get_lastch() == CK_MOUSE_CMD))
     {
         _display_vampire_attributes();
     }

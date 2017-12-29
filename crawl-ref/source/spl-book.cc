@@ -298,9 +298,7 @@ void mark_had_book(book_type booktype)
 
 void read_book(item_def &book)
 {
-    clrscr();
     describe_item(book);
-    redraw_screen();
 }
 
 /**
