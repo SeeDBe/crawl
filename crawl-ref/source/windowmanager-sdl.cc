@@ -707,7 +707,7 @@ int SDLWrapper::wait_event(wm_event *event)
         break;
     case SDL_TEXTINPUT:
     {
-        event->type = WME_KEYPRESS;
+        event->type = WME_KEYDOWN;
         // XXX: handle multiple keys?
         char32_t wc;
         utf8towc(&wc, sdlevent.text.text);
@@ -798,10 +798,6 @@ unsigned int SDLWrapper::get_event_count(wm_event_type type)
         event = SDL_KEYUP;
         break;
 
-    case WME_KEYPRESS:
-        event = SDL_TEXTINPUT;
-        break;
-
     case WME_MOUSEMOTION:
         event = SDL_MOUSEMOTION;
         break;
@@ -832,6 +828,8 @@ unsigned int SDLWrapper::get_event_count(wm_event_type type)
 
     // Note: this returns -1 for error.
     int count = SDL_PeepEvents(&store, 1, SDL_PEEKEVENT, event, event);
+    if (type == WME_KEYDOWN)
+        count += SDL_PeepEvents(&store, 1, SDL_PEEKEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT);
     ASSERT(count >= 0);
 
     return max(count, 0);
