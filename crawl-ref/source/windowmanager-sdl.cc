@@ -687,6 +687,8 @@ int SDLWrapper::wait_event(wm_event *event)
         // textinput events for the same key.
         if (event->key.keysym.sym)
             _suppress_textinput();
+        else
+            return 0;
 
 /*
  * LShift = scancode 0x30; tiles_key_mod 0x1; unicode 0x130; sym 0x130 SDLK_LSHIFT
