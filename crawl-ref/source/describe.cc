@@ -3030,6 +3030,49 @@ static bool _get_spell_description(const spell_type spell,
 }
 
 /**
+ * Make a list of all books that contain a given spell.
+ *
+ * @param spell_type spell      The spell in question.
+ * @return                      A formatted list of books containing
+ *                              the spell, e.g.:
+ *    \n\nThis spell can be found in the following books: dreams, burglary.
+ *    or
+ *    \n\nThis spell is not found in any books.
+ */
+static string _spell_sources(const spell_type spell)
+{
+    item_def item;
+    set_ident_flags(item, ISFLAG_IDENT_MASK);
+    vector<string> books;
+
+    item.base_type = OBJ_BOOKS;
+    for (int i = 0; i < NUM_FIXED_BOOKS; i++)
+    {
+        if (item_type_removed(OBJ_BOOKS, i))
+            continue;
+        for (spell_type sp : spellbook_template(static_cast<book_type>(i)))
+            if (sp == spell)
+            {
+                item.sub_type = i;
+                books.push_back(item.name(DESC_PLAIN));
+            }
+    }
+
+    if (books.empty())
+        return "\nThis spell is not found in any books.";
+
+    string desc;
+
+    desc += "\nThis spell can be found in the following book";
+    if (books.size() > 1)
+        desc += "s";
+    desc += ":\n ";
+    desc += comma_separated_line(books.begin(), books.end(), "\n ", "\n ");
+
+    return desc;
+}
+
+/**
  * Provide the text description of a given spell.
  *
  * @param spell     The spell in question.
@@ -3046,9 +3089,11 @@ void get_spell_desc(const spell_type spell, describe_info &inf)
 class spell_description_popup
 {
 public:
-    spell_description_popup(spell_type spell, const monster_info *mon_owner, const item_def* item) {
+    spell_description_popup(spell_type spell, const monster_info *mon_owner, const item_def* item, bool show_booklist) {
         m_spell = spell;
         m_can_mem = _get_spell_description(spell, mon_owner, m_desc, item);
+        if (show_booklist)
+            m_desc += _spell_sources(spell);
     }
 
     int show()
@@ -3135,9 +3180,9 @@ protected:
  * @param item      The item holding the spell, if any.
  */
 void describe_spell(spell_type spelled, const monster_info *mon_owner,
-                    const item_def* item)
+                    const item_def* item, bool show_booklist)
 {
-    spell_description_popup menu(spelled, mon_owner, item);
+    spell_description_popup menu(spelled, mon_owner, item, show_booklist);
     if (menu.show())
     {
         if (!learn_spell(spelled) || !you.turn_is_over)
