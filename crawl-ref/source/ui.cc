@@ -175,6 +175,11 @@ UISizeReq UI::get_preferred_size(int dim, int prosp_width)
         ret.nat = ui_expand_sz;
     ret.nat = min(ret.nat, ui_expand_sz);
 
+    ASSERT(m_min_size[dim] <= m_max_size[dim]);
+    ret.min = max(ret.min, m_min_size[dim]);
+    ret.nat = min(ret.nat, max(m_max_size[dim], ret.min));
+    ASSERT(ret.min <= ret.nat);
+
     cached_sr_valid[dim] = true;
     cached_sr[dim] = ret;
     if (dim)
